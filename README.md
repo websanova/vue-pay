@@ -1,4 +1,4 @@
-# Vue Upload
+# Vue Pay
 
 A simple, light weight payment module for Vue.js.
 

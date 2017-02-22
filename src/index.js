@@ -8,7 +8,7 @@ module.exports = (function() {
             _billing   = pay.billing,
             _cancel    = pay.cancel,
             _resume    = pay.resume,
-            _swap      = pay.swap;
+            _swap      = pay.swap,
             _purchase  = pay.purchase;
 
         Object.defineProperties(Vue.prototype, {

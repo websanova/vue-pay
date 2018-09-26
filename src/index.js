@@ -1,29 +1,21 @@
 var Pay = require('./pay.js')();
 
-module.exports = (function() {
+function plugin(Vue, options) {
+    var pay = new Pay(Vue, options);
 
-    return function install(Vue, options) {
-        var pay        = new Pay(Vue, options || {}),
-            _subscribe = pay.subscribe,
-            _billing   = pay.billing,
-            _cancel    = pay.cancel,
-            _resume    = pay.resume,
-            _swap      = pay.swap,
-            _purchase  = pay.purchase;
+    Vue.pay = pay;
 
-        Object.defineProperties(Vue.prototype, {
-            $pay: {
-                get: function() {
-                    pay.subscribe = _subscribe.bind(this);
-                    pay.billing   = _billing.bind(this);
-                    pay.cancel    = _cancel.bind(this);
-                    pay.resume    = _resume.bind(this);
-                    pay.swap      = _swap.bind(this);
-                    pay.purchase  = _purchase.bind(this);
-
-                    return pay;
-                }
+    Object.defineProperties(Vue.prototype, {
+        $pay: {
+            get: function () {
+                return pay;
             }
-        });
-    }
-})();
+        }
+    });
+};
+
+if (typeof window !== 'undefined' && window.Vue) {
+    window.Vue.use(plugin);
+}
+
+export default plugin;

@@ -34,23 +34,30 @@ Coming soon.
 List of methods.
 
 ```javascript
-this.$pay.init(); // For initializing driver / files (like Stripe)
+this.$pay.init(); // For initializing driver / files (ex: Stripe).
 
-this.$pay.subscribe(); // Subscribe to a selected plan or argument
+this.$pay.subscribe(); // Subscribe to a selected plan.
+
+this.$pay.unsubscribe(); // Subscribe to a selected plan.
 
 this.$pay.billing(); // Update (or add) billing info (create customer).
 
-this.$pay.swap();
+this.$pay.select(); // get or set selected plan.
 
-this.$pay.cancel();
+this.$pay.plan(); // get or set current plan.
 
-this.$pay.resume();
+this.$pay.plans(); // get plans.
 
-this.$pay.select();
+this.$pay.fetchPlans(); // fetch plans
 
-this.$pay.plan();
-
-this.$pay.plans();
+this.$pay.setMerchant(); // Swapping merchants
 
 this.$pay.purchase();
 ```
+
+
+### ToDo
+
+* coupons
+* purchase
+* cart

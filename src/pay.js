@@ -1,4 +1,52 @@
-module.exports = function() {
+module.exports = function () {
+
+    var __pay = null;
+
+    var __defaultOptions = {
+
+        merchant: 'stripe',
+
+        http: _http,
+        
+        promise: _promise,
+
+        async: _async,
+
+        plansKey: 'id',
+
+        plansData: {
+            url: 'plans'
+        },
+
+        plansAutoFetch: true,
+
+        plansParseResponse: _parseResponse,
+
+        invalidCardNumberMsg: 'Invalid card number.',
+
+        invalidCardExpiryMsg: 'Invalid card expiry.',
+
+        billingData: {
+            method: 'put',
+            url: 'billing/update'
+        },
+
+        subscribeData: {
+            method: 'put',
+            url: 'subscriptions/update',
+            billing: true
+        },
+
+        subscribeStopData: {
+            method: 'put',
+            url: 'subscriptions/stop'
+        },
+
+        subscribeCancelData: {
+            method: 'put',
+            url: 'subscriptions/cancel'
+        }
+    };
 
     function _async(u, c) {
         var d = document, t = 'script',
@@ -12,271 +60,204 @@ module.exports = function() {
         s.parentNode.insertBefore(o, s);
     }
 
-    function _duckPunch(ctx, name, data) {
-        data = Object.assign({}, this.options[name + 'Data'], data);
+    function _http(options) {
+        var http = __pay.Vue.http(options);
 
-        data.url = this.watch.prepend + data.url;
+        http.then(options.success, options.error);
 
-        if (data.success) {
-            data.success = data.success.bind(ctx);
-        }
-        
-        if (data.error) {
-            data.error = data.error.bind(ctx);
-        }
-
-        this.options.http.call(this, data);
+        return http;
     }
 
-    function _http(data) {
-        this.Vue.http(data).then(data.success, data.error);
+    function _promise(func) {
+        return Promise.resolve({
+            then: function (onFulfill, onReject) {
+                func(onFulfill, onReject);
+            }
+        });
     }
 
-    function _parsePlans(res) {
+    function _parseResponse(res) {
         return res.data.data;
     }
 
     function _processPlans() {
         var i, ii,
-            plan = null,
-            key = this.options.planKey,
-            plans = this.watch.plans;
+            key = __pay.options.plansKey,
+            current = __pay.$vm.current,
+            selected = __pay.$vm.selected,
+            plans = __pay.$vm.plans || [];
 
         for (i = 0, ii = plans.length; i < ii; i++) {
-            plan = plans[i];
-
-            plan.current = plans[i][key] === (this.watch.plan || {})[key] ? true : false;
-            plan.selected = plans[i][key] === (this.watch.selected || {})[key] ? true : false;
-
-            this.Vue.set(plans, i, plan);
+            (function (i) {
+                Vue.set(plans[i], 'current', plans[i][key] === (current || {})[key] ? true : false);
+                
+                Vue.set(plans[i], 'selected', plans[i][key] === (selected || {})[key] ? true : false);
+            })(i);
         }
     }
 
-    var defaultOptions = {
-        http: _http,
-        async: _async,
+    function _getToken(data, cb) {
+        return __pay.options.promise(function (onFulfill, onReject) {
+            __pay.merchants[__pay.options.merchant].getToken(
+                data.card,
+                
+                function (res) {
+                    data.body = data.body || {};
 
-        parsePlans: _parsePlans,
+                    data.body.token = res.data.token;
 
-        fetchPlansData: {
-            url: 'plans',
-            success: function(res) {
-                this.watch.plans = this.options.parsePlans(res);
-                _processPlans.call(this);
+                    onFulfill(cb(data));
+                },
+                
+                onReject
+            );
+        });
+    }
+
+    function _findPlan(plan) {
+        var i, ii,
+            id,
+            key,
+            plans;
+
+        key = __pay.options.plansKey;
+        
+        id = plan[key] || plan;
+
+        plans = __pay.plans() || [];
+
+        for (i = 0, ii = plans.length; i < ii; i++) {
+            if (plans[i][key] === id) {
+                return plans[i];
             }
-        },
+        }
 
-        publicKey: null,
-
-        subscribeData: {
-            method: 'post',
-            url: 'subscriptions'
-        },
-
-        billingData: {
-            method: 'put',
-            url: 'billing'
-        },
-
-        cancelData: {
-            method: 'delete',
-            url: 'subscriptions'
-        },
-
-        resumeData: {
-            method: 'put',
-            url: 'subscriptions/resume'
-        },
-
-        swapData: {
-            method: 'put',
-            url: 'subscriptions/swap'
-        },
-
-        purchaseData: {
-            method: 'post',
-            url: 'purchases'
-        },
-
-        merchantKey: null,
-
-        planKey: 'id'
-    };
+        return null;
+    }
 
     function Pay(Vue, options) {
-        this.options = Object.assign(defaultOptions, options);
+        this.options = Object.assign({}, __defaultOptions, options);
+
         this.Vue = Vue;
 
-        this.watch = new this.Vue({
+        this.$vm = new Vue({
             data: function() {
                 return {
-                    prepend: '',
-                    plans: [],
-                    plan: null,
+                    plans: null,
+                    current: null,
                     selected: null
                 };
             }
         });
+
+        this.merchants = {};
+
+        __pay = this;
     }
 
-    Pay.prototype.init = function(data) {
-        var _this = this;
+    Pay.prototype.subscribe = function(data) {
+        var planKey = 'plan_' + __pay.options.plansKey,
+            selected = __pay.$vm.selected;
 
-        data = data || {};
+        data = Object.assign({}, __pay.options.subscribeData, data);
 
-        if (!this.watch.plans.length || !this.options.fetchPlansData) {
-            if (this.options.fetchPlansData.success) {
-                this.options.fetchPlansData.success = this.options.fetchPlansData.success.bind(this);
-            }
-
-            this.options.http.call(this, this.options.fetchPlansData);
+        if (selected) {
+            data.body[planKey] = selected[__pay.options.plansKey];
         }
 
-        this.watch.plan = data.plan || null;
-        this.watch.selected = data.selected || null;
-        this.watch.prepend = data.prepend || '';
+        if (data.billing) {
+            return __pay.billing(data);
+        }
 
-        _processPlans.call(this);
-
-        this.options.merchant.init.call(this);
-    };
-
-    Pay.prototype.subscribe = function(data) {
-        var _this = this.$pay,
-            card,
-            success = data.success;
-
-        data = Object.assign({}, _this.options.subscribeData, data);
-        data.url = _this.watch.prepend + data.url;
-        data.body = data.body || {};
-
-        data.success = function (res) {
-            _this.watch.plan = Object.assign({}, _this.watch.selected);
-            _this.watch.selected = null;
-            _processPlans.call(_this);
-
-            if (success) {
-                success.call(this, res);
-            }
-        };
-
-        if (data.success) { data.success = data.success.bind(this); }
-        if (data.error) { data.error = data.error.bind(this); }
-
-        card = _this.options.merchant.parseCardData(data.body);
-
-        Stripe.card.createToken(card, function(status, res) {
-            if (res.error) {
-                if (data.error) {
-                    data.error(_this.options.merchant.parseTokenError(res));
-                }
-            }
-            else {
-                data.body.plan_id = _this.select()[_this.options.planKey];
-                data.body.subscription_id = _this.options.merchant.parseTokenSuccess(res);
-
-                _this.options.http.call(_this, data);
-            }
-        });
+        return __pay.options.http(data);
     };
 
     Pay.prototype.billing = function(data) {
-        var _this = this.$pay,
-            card;
+        data = Object.assign({}, __pay.options.billingData, data);
 
-        data = Object.assign({}, _this.options.billingData, data);
-        data.url = _this.watch.prepend + data.url;
-        data.body = data.body || {};
-
-        if (data.success) { data.success = data.success.bind(this); }
-        if (data.error) { data.error = data.error.bind(this); }
-
-        card = _this.options.merchant.parseCardData(data.body);
-
-        Stripe.card.createToken(card, function(status, res) {
-            if (res.error) {
-                if (data.error) {
-                    data.error(_this.options.merchant.parseTokenError(res));
-                }
-            }
-            else {
-                data.body.subscription_id = _this.options.merchant.parseTokenSuccess(res);
-
-                _this.options.http.call(_this, data);
-            }
+        return _getToken(data, function () {
+            return __pay.options.promise(function (onFulfill, onReject) {
+                __pay.Vue
+                    .http(data)
+                    .then(onFulfill, onReject);
+            });
         });
     };
 
-    Pay.prototype.swap = function(data) {
-        var success,
-            _this = this.$pay;
+    Pay.prototype.unsubscribe = function(data) {
+        var subscribeData = __pay.options['subscribe' + (data.stop ? 'Stop' : 'Cancel') + 'Data'];
 
-        data = data || {};
+        data = Object.assign({}, subscribeData, data);
 
-        if (data.plan) {
-            data.body = data.body || {};
-            data.body.plan_id = data.plan[_this.options.planKey];
+        return __pay.options.http(data);
+    };
 
-            success = data.success;
+    Pay.prototype.init = function(merchant, key) {
+        __pay.merchants[merchant].key = key;
 
+        __pay.merchants[merchant].instance = __pay;
+
+        __pay.merchants[merchant].init();
+
+        if (__pay.options.plansAutoFetch && ! __pay.$vm.plans) {
+            __pay.fetchPlans();
+        }
+    };
+
+    Pay.prototype.fetchPlans = function() {
+        var data = Object.assign({}, __pay.options.plansData);
+
+        if (!data.success) {
             data.success = function (res) {
-                _this.watch.selected = null;
-                _this.watch.plan = Object.assign({}, data.plan);
-                _processPlans.call(_this);
+                __pay.Vue.set(__pay.$vm, 'plans', __pay.options.plansParseResponse(res));
 
-                if (success) {
-                    success.call(this, res);
-                }
+                _processPlans();
             };
-
-            if (data.success) { data.success = data.success.bind(this); }
-            if (data.error) { data.error = data.error.bind(this); }
         }
 
-        _duckPunch.call(this.$pay, this, 'swap', data);
-    };
-
-    Pay.prototype.cancel = function(data) {
-        _duckPunch.call(this.$pay, this, 'cancel', data);
-    };
-
-    Pay.prototype.resume = function(data) {
-        _duckPunch.call(this.$pay, this, 'resume', data);
-    };
-
-    Pay.prototype.purchase = function(data) {
-        _duckPunch.call(this.$pay, this, 'purchase', data);
+        return __pay.options.http(data);
     };
 
     Pay.prototype.plans = function(plans) {
         if ( ! plans) {
-            return this.watch.plans;
+            return __pay.$vm.plans;
         }
 
-        this.watch.plans = plans;
+        __pay.Vue.set(__pay.$vm, 'plans', plans);
 
-        _processPlans.call(this);
+        _processPlans();
     };
 
+
     Pay.prototype.plan = function(plan) {
-        if (plan === undefined) {
-            return this.watch.plan;
+        if ( ! plan) {
+            return __pay.$vm.current;
         }
 
-        this.watch.plan = plan;
+        __pay.Vue.set(__pay.$vm, 'current', _findPlan(plan));
 
-        _processPlans.call(this);
+        _processPlans();
     };
 
     Pay.prototype.select = function(plan) {
-        if (plan === undefined) {
-            return this.watch.selected;
+        if ( ! plan) {
+            return __pay.$vm.selected;
         }
 
-        this.watch.selected = plan;
+        __pay.Vue.set(__pay.$vm, 'selected', _findPlan(plan));
 
-        _processPlans.call(this);
+        _processPlans();
+    };
+
+    Pay.prototype.unselect = function(plan) {
+        __pay.Vue.set(__pay.$vm, 'selected', null);
+
+        _processPlans();
+    };
+
+    Pay.prototype.setMerchant = function(name) {
+        __pay.options.merchant = name;
     };
 
     return Pay;
-};
+}

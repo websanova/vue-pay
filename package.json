@@ -3,7 +3,7 @@
 
   "description": "A simple, light weight payment module for Vue.js.",
   
-  "keywords": ["vue", "vue.js", "pay", "payments", "cart", "purchase", "stripe", "plugin"],
+  "keywords": ["vue", "vue.js", "pay", "payments", "cart", "purchase", "stripe", "braintree", "plugin"],
 
   "author": {
     "name": "Websanova",
@@ -14,7 +14,7 @@
   
   "main": "src/index.js",
   
-  "version": "0.2.1-alpha",
+  "version": "0.3.0-alpha",
   
   "repository": {
     "type": "git",

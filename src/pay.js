@@ -89,9 +89,9 @@ module.exports = function () {
 
         for (i = 0, ii = plans.length; i < ii; i++) {
             (function (i) {
-                Vue.set(plans[i], 'current', plans[i][key] === (current || {})[key] ? true : false);
+                __pay.Vue.set(plans[i], 'current', plans[i][key] === (current || {})[key] ? true : false);
                 
-                Vue.set(plans[i], 'selected', plans[i][key] === (selected || {})[key] ? true : false);
+                __pay.Vue.set(plans[i], 'selected', plans[i][key] === (selected || {})[key] ? true : false);
             })(i);
         }
     }

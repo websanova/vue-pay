@@ -2,7 +2,9 @@
     <component
         :id="id"
         :is="tag"
-    />
+    >
+        <slot />
+    </component>
 </template>
 
 <script>

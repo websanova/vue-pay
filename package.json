@@ -14,7 +14,7 @@
   
   "main": "src/v3.js",
   
-  "version": "0.4.0-alpha",
+  "version": "0.4.1-alpha",
   
   "repository": {
     "type": "git",

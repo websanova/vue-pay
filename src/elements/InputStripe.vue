@@ -2,9 +2,7 @@
     <component
         :id="id"
         :is="tag"
-    >
-        {{ type }}
-    </component>
+    />
 </template>
 
 <script>
@@ -36,7 +34,7 @@
                 // NOTE: There seems to be occasional issues with
                 //       the Stripe mount failing in a race with
                 //       Vue actually rendering the element (id).
-                //       This little timer seems to help with that.
+                //       This little timer will help with that.
                 timer = setInterval(() => {
                     if (document.getElementById(this.id)) {
                         clearInterval(timer);

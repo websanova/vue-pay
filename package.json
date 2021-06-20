@@ -1,9 +1,9 @@
 {
   "name": "@websanova/vue-pay",
 
-  "description": "A simple, light weight payment module for Vue.js.",
+  "description": "A simple, light weight payment wrapper module third party payment libraries.",
   
-  "keywords": ["vue", "vue.js", "pay", "payments", "cart", "purchase", "stripe", "braintree", "plugin"],
+  "keywords": ["vue", "vue.js", "pay", "payments", "merchant", "gateway", "purchase", "stripe", "plugin", "wrapper", "elements"],
 
   "author": {
     "name": "Websanova",
@@ -12,9 +12,9 @@
     "email": "rob@websanova.com"
   },
   
-  "main": "src/index.js",
+  "main": "src/v3.js",
   
-  "version": "0.3.1-alpha",
+  "version": "0.4.0-alpha",
   
   "repository": {
     "type": "git",
@@ -24,13 +24,10 @@
   "licenses": "MIT, GPL",
 
   "devDependencies": {
-    "webpack": "3.4.1",
-    "babel-core": "6.24.1",
-    "babel-loader": "7.0.0",
-    "babel-preset-blue": "^1.0.0-beta.29"
+
   },
   
   "scripts": {
-    "build": "node ./build.js"
+    
   }
 }

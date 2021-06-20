@@ -1,18 +1,16 @@
-var Pay = require('./pay.js')();
+import Pay from './pay.js';
 
 function plugin(Vue, options) {
-    var pay = new Pay(Vue, options);
-
-    Vue.pay = pay;
+    Vue.pay = new Pay(Vue, options);
 
     Object.defineProperties(Vue.prototype, {
         $pay: {
             get: function () {
-                return pay;
+                return Vue.pay;
             }
         }
     });
-};
+}
 
 if (typeof window !== 'undefined' && window.Vue) {
     window.Vue.use(plugin);

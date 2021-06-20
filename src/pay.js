@@ -1,263 +1,119 @@
-module.exports = function () {
+var __pay = null;
 
-    var __pay = null;
+var __defaultOptions = {
+    
+};
 
-    var __defaultOptions = {
-
-        merchant: 'stripe',
-
-        http: _http,
-        
-        promise: _promise,
-
-        async: _async,
-
-        plansKey: 'id',
-
-        plansData: {
-            url: 'plans'
-        },
-
-        plansAutoFetch: true,
-
-        plansParseResponse: _parseResponse,
-
-        invalidCardNumberMsg: 'Invalid card number.',
-
-        invalidCardExpiryMsg: 'Invalid card expiry.',
-
-        billingData: {
-            method: 'put',
-            url: 'billing/update'
-        },
-
-        subscribeData: {
-            method: 'put',
-            url: 'subscriptions/update',
-            billing: true
-        },
-
-        subscribeStopData: {
-            method: 'put',
-            url: 'subscriptions/stop'
-        },
-
-        subscribeCancelData: {
-            method: 'put',
-            url: 'subscriptions/cancel'
-        }
-    };
-
-    function _async(u, c) {
-        var d = document, t = 'script',
-            o = d.createElement(t),
-            s = d.getElementsByTagName(t)[0];
-      
-        o.src = u;
-      
-        if (c) { o.addEventListener('load', function (e) { c(null, e); }, false); }
-      
-        s.parentNode.insertBefore(o, s);
+function _addResolver(gateway, resolver) {
+    if (!__pay.resolvers[gateway]) {
+        __pay.resolvers[gateway] = [];
     }
 
-    function _http(options) {
-        var http = __pay.Vue.http(options);
-
-        http.then(options.success, options.error);
-
-        return http;
-    }
-
-    function _promise(func) {
-        return Promise.resolve({
-            then: function (onFulfill, onReject) {
-                func(onFulfill, onReject);
-            }
-        });
-    }
-
-    function _parseResponse(res) {
-        return res.data.data;
-    }
-
-    function _processPlans() {
-        var i, ii,
-            key = __pay.options.plansKey,
-            current = __pay.$vm.current,
-            selected = __pay.$vm.selected,
-            plans = __pay.$vm.plans || [];
-
-        for (i = 0, ii = plans.length; i < ii; i++) {
-            (function (i) {
-                __pay.Vue.set(plans[i], 'current', plans[i][key] === (current || {})[key] ? true : false);
-                
-                __pay.Vue.set(plans[i], 'selected', plans[i][key] === (selected || {})[key] ? true : false);
-            })(i);
-        }
-    }
-
-    function _getToken(data, cb) {
-        return __pay.options.promise(function (onFulfill, onReject) {
-            __pay.merchants[__pay.options.merchant].getToken(
-                data.card,
-                
-                function (res) {
-                    data.body = data.body || {};
-
-                    data.body.token = res.data.token;
-
-                    onFulfill(cb(data));
-                },
-                
-                onReject
-            );
-        });
-    }
-
-    function _findPlan(plan) {
-        var i, ii,
-            id,
-            key,
-            plans;
-
-        key = __pay.options.plansKey;
-        
-        id = plan[key] || plan;
-
-        plans = __pay.plans() || [];
-
-        for (i = 0, ii = plans.length; i < ii; i++) {
-            if (plans[i][key] === id) {
-                return plans[i];
-            }
-        }
-
-        return null;
-    }
-
-    function Pay(Vue, options) {
-        this.options = Object.assign({}, __defaultOptions, options);
-
-        this.Vue = Vue;
-
-        this.$vm = new Vue({
-            data: function() {
-                return {
-                    plans: null,
-                    current: null,
-                    selected: null
-                };
-            }
-        });
-
-        this.merchants = {};
-
-        __pay = this;
-    }
-
-    Pay.prototype.subscribe = function(data) {
-        var planKey = 'plan_' + __pay.options.plansKey,
-            selected = __pay.$vm.selected;
-
-        data = Object.assign({}, __pay.options.subscribeData, data);
-
-        if (selected) {
-            data.body[planKey] = selected[__pay.options.plansKey];
-        }
-
-        if (data.billing) {
-            return __pay.billing(data);
-        }
-
-        return __pay.options.http(data);
-    };
-
-    Pay.prototype.billing = function(data) {
-        data = Object.assign({}, __pay.options.billingData, data);
-
-        return _getToken(data, function () {
-            return __pay.options.promise(function (onFulfill, onReject) {
-                __pay.Vue
-                    .http(data)
-                    .then(onFulfill, onReject);
-            });
-        });
-    };
-
-    Pay.prototype.unsubscribe = function(data) {
-        var subscribeData = __pay.options['subscribe' + (data.stop ? 'Stop' : 'Cancel') + 'Data'];
-
-        data = Object.assign({}, subscribeData, data);
-
-        return __pay.options.http(data);
-    };
-
-    Pay.prototype.init = function(merchant, key) {
-        __pay.merchants[merchant].key = key;
-
-        __pay.merchants[merchant].instance = __pay;
-
-        __pay.merchants[merchant].init();
-
-        if (__pay.options.plansAutoFetch && ! __pay.$vm.plans) {
-            __pay.fetchPlans();
-        }
-    };
-
-    Pay.prototype.fetchPlans = function() {
-        var data = Object.assign({}, __pay.options.plansData);
-
-        if (!data.success) {
-            data.success = function (res) {
-                __pay.Vue.set(__pay.$vm, 'plans', __pay.options.plansParseResponse(res));
-
-                _processPlans();
-            };
-        }
-
-        return __pay.options.http(data);
-    };
-
-    Pay.prototype.plans = function(plans) {
-        if ( ! plans) {
-            return __pay.$vm.plans;
-        }
-
-        __pay.Vue.set(__pay.$vm, 'plans', plans);
-
-        _processPlans();
-    };
-
-
-    Pay.prototype.plan = function(plan) {
-        if ( ! plan) {
-            return __pay.$vm.current;
-        }
-
-        __pay.Vue.set(__pay.$vm, 'current', _findPlan(plan));
-
-        _processPlans();
-    };
-
-    Pay.prototype.select = function(plan) {
-        if ( ! plan) {
-            return __pay.$vm.selected;
-        }
-
-        __pay.Vue.set(__pay.$vm, 'selected', _findPlan(plan));
-
-        _processPlans();
-    };
-
-    Pay.prototype.unselect = function(plan) {
-        __pay.Vue.set(__pay.$vm, 'selected', null);
-
-        _processPlans();
-    };
-
-    Pay.prototype.setMerchant = function(name) {
-        __pay.options.merchant = name;
-    };
-
-    return Pay;
+    __pay.resolvers[gateway].push(resolver);
 }
+
+function _processResolvers(gateway) {
+    var resolver;
+
+    if(__pay.scriptLoadStatus === 'loaded') {
+        resolver = __pay.resolvers[gateway].splice(0, 1);
+
+        if (resolver.length) {
+            resolver[0]();
+
+            if (__pay.resolvers[gateway].length) {
+                _processResolvers(gateway);
+            }
+        }
+    }
+}
+
+function _loadScript(gateway) {
+    return new Promise(function (resolve, reject) {
+        var script;
+
+        if (
+            !__pay.gateways[gateway].isLoaded() &&
+           __pay.scriptLoadStatus === null
+        ) {
+           __pay.scriptLoadStatus = 'loading';
+
+            script = document.createElement('script');
+        
+            script.setAttribute('src', __pay.gateways[gateway].url);
+            
+            script.onload = function() {
+
+                // NOTE: Give the script some time to insert and boot up.
+                setTimeout(function() {
+                    __pay.scriptLoadStatus = 'loaded';
+
+                    resolve();
+                }, 250);
+            };
+            
+            document.body.appendChild(script);
+        }
+        else {
+            resolve();
+        }
+    });
+}
+
+function _createElement(args) {
+    return __pay.gateways[args.gateway].createElement(__pay.options[args.gateway], args);
+}
+
+function _createUser(args) {
+    return __pay.gateways[args.gateway].createUser(__pay.options[args.gateway], args);
+}
+
+function _reset(args) {
+    __pay.gateways[args.gateway].reset();
+}
+
+function Pay(Vue, args) {
+    __pay  = this;
+
+    args = args || {};
+    
+    this.options   = Object.assign(__defaultOptions, args.options);
+    this.gateways  = args.gateways;
+    this.resolvers = [];
+
+    this.scriptLoadStatus = null;
+
+    delete args.options;
+    delete args.gateways;
+}
+
+Pay.prototype.generateId = function() {
+    return 'el-vue-pay-id-' + Math.floor(Math.random() * 100000000);
+};
+
+Pay.prototype.createElement = function(args) {
+    return new Promise(function(resolve) {
+        _addResolver(args.gateway, function() {
+            _createElement(args).then(resolve);
+        });
+
+        _loadScript(args.gateway)
+            .then(function() {
+                _processResolvers(args.gateway);
+            });
+    });
+};
+
+Pay.prototype.createUser = function(args) {
+    return _createUser(args);
+};
+
+Pay.prototype.createForm = function(args) {
+    // TODO: For embedding an entire form.
+}
+
+Pay.prototype.reset = function(args) {
+    _reset(args);
+}
+
+export default Pay;

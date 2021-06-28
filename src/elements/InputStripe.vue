@@ -46,11 +46,14 @@
                             type: this.type,
                             gateway: 'stripe',
                             options: this.options,
-                            onBlur: () => {
-                                this.$emit('blur', this.type);
+                            onBlur: (event) => {
+                                this.$emit('blur', event);
                             },
-                            onFocus: () => {
-                                this.$emit('focus', this.type);
+                            onFocus: (event) => {
+                                this.$emit('focus', event);
+                            },
+                            onChange: (event) => {
+                                this.$emit('change', event);
                             }
                         })
                         .then(() => {

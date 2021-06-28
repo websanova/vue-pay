@@ -33,8 +33,14 @@ export default {
                     _this._fields[args.type].on('focus', args.onFocus);
                 }
 
+                if (args.onChange) {
+                    _this._fields[args.type].on('change', args.onChange);
+                }
+
                 _this._fields[args.type].on('ready', function() {
-                    _this._resolvers[args.type](_this._fields[args.type]);
+                    _this._resolvers[args.type]({
+                        elementType: args.type
+                    });
                 });
             }
 

@@ -26,7 +26,7 @@ export default {
                 _this._fields[args.type] = _this._elements.create(args.type, args.options);
                 
                 _this._fields[args.type].on('ready', function() {
-                    _this._resolvers[args.type]();
+                    _this._resolvers[args.type](_this._fields[args.type]);
                 });
             }
 

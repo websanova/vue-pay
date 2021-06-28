@@ -25,6 +25,14 @@ export default {
             if (!_this._fields[args.type]) {
                 _this._fields[args.type] = _this._elements.create(args.type, args.options);
                 
+                if (args.onBlur) {
+                    _this._fields[args.type].on('blur', args.onBlur);
+                }
+
+                if (args.onFocus) {
+                    _this._fields[args.type].on('focus', args.onFocus);
+                }
+
                 _this._fields[args.type].on('ready', function() {
                     _this._resolvers[args.type](_this._fields[args.type]);
                 });

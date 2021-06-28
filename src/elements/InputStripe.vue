@@ -45,7 +45,13 @@
                             id: this.id,
                             type: this.type,
                             gateway: 'stripe',
-                            options: this.options
+                            options: this.options,
+                            onBlur: () => {
+                                this.$emit('blur', this.type);
+                            },
+                            onFocus: () => {
+                                this.$emit('focus', this.type);
+                            }
                         })
                         .then(() => {
                             this.$emit('loaded', this.type);

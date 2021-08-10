@@ -15,30 +15,35 @@ export default {
      *       of errors whenever/wherever they are used.
      */
     createElement(options, args) {
-        var _this = this;
+        var _this  = this;
+        var events = ['blur', 'change', 'focus'];
 
         this._createInstance(options);
 
         return new Promise(function(resolve) {
-            _this._resolvers[args.type] = resolve;
+            if (!_this._events[args.type]) {
+                _this._events[args.type] = {};
+            }
+
+            events.forEach(function (val) {
+                _this._events[args.type][val] = args['on' + val[0].toUpperCase() + val.substring(1)];
+            });
+
+            _this._events[args.type].resolve = resolve;
 
             if (!_this._fields[args.type]) {
                 _this._fields[args.type] = _this._elements.create(args.type, args.options);
                 
-                if (args.onBlur) {
-                    _this._fields[args.type].on('blur', args.onBlur);
-                }
-
-                if (args.onFocus) {
-                    _this._fields[args.type].on('focus', args.onFocus);
-                }
-
-                if (args.onChange) {
-                    _this._fields[args.type].on('change', args.onChange);
-                }
+                events.forEach(function (val) {
+                    _this._fields[args.type].on(val, function($e) {
+                        if (_this._events[args.type][val]) {
+                            _this._events[args.type][val]($e);
+                        }
+                    });
+                });
 
                 _this._fields[args.type].on('ready', function() {
-                    _this._resolvers[args.type]({
+                    _this._events[args.type].resolve({
                         elementType: args.type
                     });
                 });
@@ -71,10 +76,10 @@ export default {
 
     _createInstance(options) {
         if (!this._instance) {
-            this._fields    = {};
-            this._resolvers = {};
-            this._instance  = global.Stripe(options.key);
-            this._elements  = this._instance.elements();
+            this._events   = {};
+            this._fields   = {};
+            this._instance = global.Stripe(options.key);
+            this._elements = this._instance.elements();
         }
     }
 }

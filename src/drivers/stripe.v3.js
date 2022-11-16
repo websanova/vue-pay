@@ -2,7 +2,7 @@ export default {
     url: 'https://js.stripe.com/v3',
 
     isLoaded() {
-        return global.Stripe ? true : false;
+        return (global || window).Stripe ? true : false;
     },
 
     /*
@@ -78,7 +78,7 @@ export default {
         if (!this._instance) {
             this._events   = {};
             this._fields   = {};
-            this._instance = global.Stripe(options.key);
+            this._instance = (global || window).Stripe(options.key);
             this._elements = this._instance.elements();
         }
     }
